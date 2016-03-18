@@ -35,7 +35,7 @@ gulp.task('sass', function() {
 });
 
 gulp.task('js', function() {
-  return browserify('./app/assets/javascripts/hotspot-manager.js')
+  return browserify('./app/assets/javascripts/main.js')
     .bundle()
     .on('error', function(e) {
       gutil.log(e);
