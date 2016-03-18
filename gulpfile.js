@@ -15,10 +15,10 @@ var buffer = require('vinyl-buffer');
 var merge = require('merge-stream');
 var collapse = require('bundle-collapser/plugin');
 
-var options = {
-  minify: !!$.util.env.minify,
-  watch: false
-};
+// var options = {
+//   minify: !!$.util.env.minify,
+//   watch: false
+// };
 
 gulp.task('serve', function() {
   nodemon({
@@ -44,12 +44,7 @@ gulp.task('js', function() {
     .pipe(gulp.dest('./app/assets/javascripts/public'));
 });
 
-// gulp.task('sass:watch', function() {
-//   gulp.watch('./app/assets/stylesheets/scss/**/*.scss', ['sass']);
-// });
-
 gulp.task('watch', function watch () {
-
   gulp.start([
     'serve',
     'sass',

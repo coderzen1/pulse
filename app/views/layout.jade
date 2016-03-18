@@ -2,30 +2,13 @@ doctype html
 html
   head
     title= title
-    meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
     link(rel="stylesheet", href="/assets/stylesheets/public/main.css")
     link(rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css")
     
   body
-    //- script
-    //-   window.fbAsyncInit = function() {
-    //-     FB.init({
-    //-       appId      : '1740076149537313',
-    //-       xfbml      : true,
-    //-       version    : 'v2.5'
-    //-     });
-    //-   };
-    //- 
-    //-   (function(d, s, id){
-    //-      var js, fjs = d.getElementsByTagName(s)[0];
-    //-      if (d.getElementById(id)) {return;}
-    //-      js = d.createElement(s); js.id = id;
-    //-      js.src = "//connect.facebook.net/en_US/sdk.js";
-    //-      fjs.parentNode.insertBefore(js, fjs);
-    //-   }(document, 'script', 'facebook-jssdk'));
-  
     block content
-    #map
+    #map(style="display: none")
     
   script(src="http://code.jquery.com/jquery.js")
   script(src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js")

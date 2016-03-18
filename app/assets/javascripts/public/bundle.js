@@ -132,14 +132,31 @@ require('./store');
 require('./user');
 
 },{"./hotspot":2,"./hotspot-manager":1,"./location":3,"./map":5,"./store":6,"./user":7}],5:[function(require,module,exports){
-var mymap = L.map('map').setView([51.505, -0.09], 13);
+var map = L.map('map');
 
 L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
     attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
     maxZoom: 18,
     id: 'coderzen.pea2fncl',
     accessToken: 'pk.eyJ1IjoiY29kZXJ6ZW4iLCJhIjoiY2lsdnp1c3I4MDA5ZnVvbTR3ZGJwZ2diYiJ9.IY5Ft0-JPC0Euf4_dlQybQ'
-}).addTo(mymap);
+}).addTo(map);
+
+function onLocationFound(e) {
+    var radius = e.accuracy / 2;
+
+    L.marker(e.latlng).addTo(map)
+        .bindPopup("You are within " + radius + " meters from this point").openPopup();
+
+    L.circle(e.latlng, radius).addTo(map);
+}
+
+function onLocationError(e) {
+    alert(e.message);
+}
+
+map.locate({setView: true, maxZoom: 16});
+map.on('locationfound', onLocationFound);
+map.on('locationerror', onLocationError);
 
 },{}],6:[function(require,module,exports){
 var rbush = require('rbush');

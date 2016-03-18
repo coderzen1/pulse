@@ -1,12 +1,13 @@
 extends ../layout.jade
 
 block content
-  .login
-    if (!user)
+  if (!user)
+    .login
       .login__options
         a.login__button(href="/login") Login
         a.login__button(href="/register") Register
-    if (user)
-      .login__message
-        .login__message-text You are currently logged in as: #{user.username}
+  if (user)
+    #map
+    .login
+      .login__message Welcome #{user.username}!
         a.login__button(href="/logout") Logout
