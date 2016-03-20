@@ -18,12 +18,17 @@
 }
 
 .login__message {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
-  text-align: right;
+  height: 40px;
   line-height: 40px;
+
+  .login__message-text {
+    text-align: right;
+    margin-right: 20px;
+  }
 
   .login__button {
     width: 70px;
@@ -31,8 +36,6 @@
     text-align: center;
     height: 40px;
     line-height: 20px;
-    margin: 0;
-    float: right;
   }
 }
 

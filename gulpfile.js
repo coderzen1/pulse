@@ -15,11 +15,6 @@ var buffer = require('vinyl-buffer');
 var merge = require('merge-stream');
 var collapse = require('bundle-collapser/plugin');
 
-// var options = {
-//   minify: !!$.util.env.minify,
-//   watch: false
-// };
-
 gulp.task('serve', function() {
   nodemon({
     script: 'app',
@@ -58,6 +53,11 @@ gulp.task('watch', function watch () {
 gulp.task('default', ['watch']);
 
 // ========================= trying out new config below ================== //
+
+// var options = {
+//   minify: !!$.util.env.minify,
+//   watch: false
+// };
 
 // gulp.task('js', function javascript () {
 //   // allow us to build multiple browserify bundles

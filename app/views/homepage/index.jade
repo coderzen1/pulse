@@ -6,8 +6,14 @@ block content
       .login__options
         a.login__button(href="/login") Login
         a.login__button(href="/register") Register
+  
   if (user)
     #map
-    .login
-      .login__message Welcome #{user.username}!
-        a.login__button(href="/logout") Logout
+    .login__message
+      .login__message-text Welcome #{user.username}!
+      a.login__button(href="/logout") Logout
+    
+    nav.nav
+      .nav__menu-item Profile
+      .nav__menu-item Connects
+      .nav__menu-item Hotspots

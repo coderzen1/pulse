@@ -38,6 +38,35 @@ h1 {
   margin: 0 auto;
   color: #61E6B4; }
 
+.nav {
+  position: absolute;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between; }
+  .nav .nav__menu-item {
+    color: #61E6B4;
+    border: 1px solid #61E6B4;
+    height: 40px;
+    margin-right: 10px;
+    width: 33%;
+    text-align: center;
+    line-height: 40px;
+    margin-bottom: 10px;
+    cursor: pointer; }
+    .nav .nav__menu-item:first-child {
+      margin-left: 5px; }
+    .nav .nav__menu-item:last-child {
+      margin-right: 5px; }
+    .nav .nav__menu-item:hover {
+      background-color: #61E6B4;
+      color: #FFFFFF; }
+
 .login {
   position: relative;
   width: 100%;
@@ -55,20 +84,21 @@ h1 {
   text-align: center; }
 
 .login__message {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
-  text-align: right;
+  height: 40px;
   line-height: 40px; }
+  .login__message .login__message-text {
+    text-align: right;
+    margin-right: 20px; }
   .login__message .login__button {
     width: 70px;
     padding: 10px;
     text-align: center;
     height: 40px;
-    line-height: 20px;
-    margin: 0;
-    float: right; }
+    line-height: 20px; }
 
 .login__button {
   display: block;
