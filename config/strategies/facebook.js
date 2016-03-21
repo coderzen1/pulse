@@ -26,7 +26,8 @@ module.exports = function() {
           password: profile.displayName,
           provider: 'facebook',
           providerId: profile.id,
-          providerData: providerData
+          providerData: providerData,
+          providerPicture: profile.picture
         };
 
         users.saveOAuthUserProfile(providerUserProfile, done);

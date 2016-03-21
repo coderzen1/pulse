@@ -42,7 +42,6 @@ module.exports = function(app) {
     ]
   }));
 
-  app.get('/profile', profile.render);
-  app.get('/update-profile', users.update);
+  app.route('/profile').get(profile.render).post(users.update);
 
 };

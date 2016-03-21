@@ -6,6 +6,7 @@ var passportLocalMongoose = require('passport-local-mongoose');
 var accountSchema = new Schema({
   name: String,
   email: String,
+  picture: {data: Buffer, contentType: String},
   username: {
     type: String,
     required: true,
@@ -29,7 +30,8 @@ var accountSchema = new Schema({
 
   provider: String,
   providerId: String,
-  providerData: {}
+  providerData: {},
+  providerPicture: {data: Buffer, contentType: String}
 });
 
 accountSchema.plugin(passportLocalMongoose);
