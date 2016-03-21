@@ -1,6 +1,7 @@
 var passport = require('passport');
 var homepage = require('../controllers/homepage.server.controller');
 var users = require('../controllers/users.server.controller');
+var profile = require('../controllers/profile.server.controller');
 
 module.exports = function(app) {
 
@@ -40,5 +41,8 @@ module.exports = function(app) {
       'user_friends'
     ]
   }));
+
+  app.get('/profile', profile.render);
+  app.get('/update-profile', users.update);
 
 };

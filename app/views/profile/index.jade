@@ -1,0 +1,19 @@
+extends ../layout.jade
+
+block content
+  .form.profile--form
+    h1.profile__title Profile Page
+    form(role='form', action="/update-profile", method="post")
+      .profile__item Name: #{user.username}
+      .profile__form-row
+        label.profile__form-label(for="name") Name
+        input.profile__form-input(type='text', name="name", id="name", placeholder='#{user.name}')
+      .profile__form-row
+        label.profile__form-label(for="age") Age
+        input.profile__form-input(type='text', name="age", id="age", placeholder='#{user.age}')
+      .profile__form-row
+        label.profile__form-label(for="age") Email
+        input.profile__form-input(type='text', name="age", id="age", placeholder='#{user.email}')
+      
+      button.button.profile__form-button(type='submit', value='Update') Update Profile
+    
