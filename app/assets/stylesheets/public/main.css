@@ -1,3 +1,33 @@
+/* We will use $susy-xx to define the number of columns(xx) in a grid
+ then you just add: @include layout($susy-xx); in your containing elements scss
+ and then, for any column element within that container, just add: @include span(x);
+ where x = the number of columns you want to span.
+ don't forget to use last in the last column element of grids with gutter-position: after.
+
+ example:
+ .container-element { @include container(); @include layout($susy-32);}
+ .column-element-1 { @include span(12); }
+ .column-element-2 { @include span(20 last); }
+
+ Notice: I am purposely not saying .container {} .column {}, because you do not need to arbitrarily create
+ these elements/classes. Most often, you can simply apply susy to already existing elements.
+ this is more semantic and purposeful, and flexible.  If you want, you can map out specific grid layouts to
+ have cusotm gutters, gutter positions, transitions, etc. */
+/* We will use $susy-xx to define the number of columns(xx) in a grid
+ then you just add: @include layout($susy-xx); in your containing elements scss
+ and then, for any column element within that container, just add: @include span(x);
+ where x = the number of columns you want to span.
+ don't forget to use last in the last column element of grids with gutter-position: after.
+
+ example:
+ .container-element { @include container(); @include layout($susy-32);}
+ .column-element-1 { @include span(12); }
+ .column-element-2 { @include span(20 last); }
+
+ Notice: I am purposely not saying .container {} .column {}, because you do not need to arbitrarily create
+ these elements/classes. Most often, you can simply apply susy to already existing elements.
+ this is more semantic and purposeful, and flexible.  If you want, you can map out specific grid layouts to
+ have cusotm gutters, gutter positions, transitions, etc. */
 html {
   box-sizing: border-box; }
 
@@ -6,14 +36,42 @@ html {
 
 body {
   background-color: #000000;
-  color: #FFFFFF; }
+  color: #FFFFFF;
+  font-family: "Roboto", sans-serif; }
 
 a {
   text-decoration: none;
   color: white; }
 
 h1 {
-  margin: 0; }
+  margin: 10px 0; }
+
+.truncate {
+  min-width: 100px;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; }
+
+.flex-row {
+  display: flex;
+  flex-flow: row wrap; }
+
+.flex-column {
+  display: flex;
+  flex-flow: column wrap; }
+
+.mobile-only {
+  display: none; }
+  @media (max-width: 767px) {
+    .mobile-only {
+      display: block; } }
+
+.mobile-hide {
+  display: block; }
+  @media (max-width: 767px) {
+    .mobile-hide {
+      display: none; } }
 
 .flash-error {
   position: fixed;
@@ -66,6 +124,20 @@ h1 {
     .nav .nav__menu-item:hover {
       background-color: #61E6B4;
       color: #FFFFFF; }
+
+.button {
+  background-color: transparent;
+  border: 0;
+  color: inherit; }
+  .button.button--primary {
+    min-width: 80px;
+    background-color: #61E6B4;
+    color: #FFFFFF;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 3px; }
+    .button.button--primary:hover {
+      background-color: #189667; }
 
 .login {
   position: relative;
@@ -153,3 +225,17 @@ h1 {
       margin-top: 20px;
       color: #FFFFFF;
       background-color: #3b5998; }
+
+.profile {
+  text-align: center; }
+  .profile .profile__avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 100px; }
+  .profile .profile__form {
+    position: relative; }
+  .profile .profile__form-label {
+    width: 120px;
+    margin-right: 20px; }
+  .profile .profile__form-input {
+    width: 180px; }

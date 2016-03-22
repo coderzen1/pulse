@@ -1,10 +1,10 @@
 extends ../layout.jade
 
 block content
-  .form.profile--form
+  section.profile
     h1.profile__title Profile Page
-    form(role='form', action="/profile", method="post")
     
+    form.form.profile__form(role='form', action="/profile", method="post")
       // need to set user profile picture through db if not signed in via FB
       if(user.providerId)
         img.profile__avatar(src="//graph.facebook.com/#{user.providerId}/picture?type=large")
@@ -25,7 +25,7 @@ block content
         label.profile__form-label(for="password") password
         input.profile__form-input(type='text', name="password", id="password", placeholder='#{user.password}')
       
-      button.button.profile__form-button(type='submit', value='Update') Update Profile
+      button.button.button--primary.profile__form-button(type='submit', value='Update') Update Profile
   
-  a.button.button--home(href="/") Home
+  a.button.button--primary(href="/") Home
     
