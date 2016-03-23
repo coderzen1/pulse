@@ -54,7 +54,8 @@ exports.update = function(req, res, next) {
       return next(err);
     }
 
-    res.json(user);
+    // res.json(user);
+    return res.redirect('/profile');
   });
 };
 
