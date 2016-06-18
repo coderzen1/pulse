@@ -1,11 +1,11 @@
 /* eslint no-unused-expressions: 0 */
 var expect = require('chai').expect;
 
-var store = require('../app/assets/javascripts/store');
-var Location = require('../app/assets/javascripts/location');
-var Hotspot = require('../app/assets/javascripts/hotspot');
-var User = require('../app/assets/javascripts/user');
-var hotspotManager = require('../app/assets/javascripts/hotspot-manager');
+var store = require('../app/assets/javascripts/components/store');
+var Location = require('../app/assets/javascripts/lcomponents/ocation');
+var Hotspot = require('../app/assets/javascripts/components/hotspot');
+var User = require('../app/assets/javascripts/components/user');
+var hotspotManager = require('../app/assets/javascripts/components/hotspot-manager');
 
 describe('Hotspot manager', function() {
   describe('on rooftop party', function() {

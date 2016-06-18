@@ -1,6 +1,7 @@
-require('./hotspot-manager');
-require('./hotspot');
-require('./location');
-require('./map');
-require('./store');
-require('./user');
+require('./components/sockets');
+require('./components/hotspot-manager');
+require('./components/hotspot');
+require('./components/location');
+require('./components/map');
+require('./components/store');
+require('./components/user');
