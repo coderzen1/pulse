@@ -1,8 +1,8 @@
 /* eslint no-unused-expressions: 0 */
 var expect = require('chai').expect;
 
-var store = require('../app/assets/javascripts/store');
-var Location = require('../app/assets/javascripts/location');
+var store = require('../app/assets/javascripts/components/store');
+var Location = require('../app/assets/javascripts/components/location');
 
 describe('Store', function() {
   before(function() {

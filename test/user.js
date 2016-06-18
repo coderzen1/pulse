@@ -5,8 +5,8 @@ describe('User', function() {
   var User;
 
   before(function() {
-    User = require('../app/assets/javascripts/user');
-    Location = require('../app/assets/javascripts/location');
+    User = require('../app/assets/javascripts/components/user');
+    Location = require('../app/assets/javascripts/components/location');
   });
 
   it('should be a function', function() {

@@ -1,7 +1,7 @@
 /* eslint no-unused-expressions: 0 */
 var expect = require('chai').expect;
 
-var Location = require('../app/assets/javascripts/location');
+var Location = require('../app/assets/javascripts/components/location');
 
 describe('Location', function() {
   it('should be a function', function() {

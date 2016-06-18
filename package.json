@@ -64,7 +64,6 @@
     "mocha": "~1.14.0",
     "rbush": "^1.4.0",
     "stringify": "^5.1.0",
-    "turf": "^2.0.2",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.7.0"

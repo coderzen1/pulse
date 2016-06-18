@@ -123,15 +123,7 @@ Location.newFromArray = function(arr) {
 
 module.exports = Location;
 
-},{"turf":13}],4:[function(require,module,exports){
-require('./hotspot-manager');
-require('./hotspot');
-require('./location');
-require('./map');
-require('./store');
-require('./user');
-
-},{"./hotspot":2,"./hotspot-manager":1,"./location":3,"./map":5,"./store":6,"./user":7}],5:[function(require,module,exports){
+},{"turf":14}],4:[function(require,module,exports){
 var map = L.map('map');
 
 L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
@@ -157,6 +149,9 @@ function onLocationError(e) {
 map.locate({setView: true, maxZoom: 16});
 map.on('locationfound', onLocationFound);
 map.on('locationerror', onLocationError);
+
+},{}],5:[function(require,module,exports){
+var socket = io();
 
 },{}],6:[function(require,module,exports){
 var rbush = require('rbush');
@@ -197,7 +192,7 @@ var store = {
 
 module.exports = store;
 
-},{"rbush":12}],7:[function(require,module,exports){
+},{"rbush":13}],7:[function(require,module,exports){
 'use strict';
 
 function User(id, email, location) {
@@ -219,122 +214,15 @@ User.prototype.previousLocation = function() {
 module.exports = User;
 
 },{}],8:[function(require,module,exports){
-'use strict'
+require('./components/sockets');
+require('./components/hotspot-manager');
+require('./components/hotspot');
+require('./components/location');
+require('./components/map');
+require('./components/store');
+require('./components/user');
 
-exports.toByteArray = toByteArray
-exports.fromByteArray = fromByteArray
-
-var lookup = []
-var revLookup = []
-var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
-
-function init () {
-  var i
-  var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  var len = code.length
-
-  for (i = 0; i < len; i++) {
-    lookup[i] = code[i]
-  }
-
-  for (i = 0; i < len; ++i) {
-    revLookup[code.charCodeAt(i)] = i
-  }
-  revLookup['-'.charCodeAt(0)] = 62
-  revLookup['_'.charCodeAt(0)] = 63
-}
-
-init()
-
-function toByteArray (b64) {
-  var i, j, l, tmp, placeHolders, arr
-  var len = b64.length
-
-  if (len % 4 > 0) {
-    throw new Error('Invalid string. Length must be a multiple of 4')
-  }
-
-  // the number of equal signs (place holders)
-  // if there are two placeholders, than the two characters before it
-  // represent one byte
-  // if there is only one, then the three characters before it represent 2 bytes
-  // this is just a cheap hack to not do indexOf twice
-  placeHolders = b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
-
-  // base64 is 4/3 + up to two characters of the original data
-  arr = new Arr(len * 3 / 4 - placeHolders)
-
-  // if there are placeholders, only get up to the last complete 4 chars
-  l = placeHolders > 0 ? len - 4 : len
-
-  var L = 0
-
-  for (i = 0, j = 0; i < l; i += 4, j += 3) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
-    arr[L++] = (tmp & 0xFF0000) >> 16
-    arr[L++] = (tmp & 0xFF00) >> 8
-    arr[L++] = tmp & 0xFF
-  }
-
-  if (placeHolders === 2) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
-    arr[L++] = tmp & 0xFF
-  } else if (placeHolders === 1) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
-  }
-
-  return arr
-}
-
-function tripletToBase64 (num) {
-  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
-}
-
-function encodeChunk (uint8, start, end) {
-  var tmp
-  var output = []
-  for (var i = start; i < end; i += 3) {
-    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
-    output.push(tripletToBase64(tmp))
-  }
-  return output.join('')
-}
-
-function fromByteArray (uint8) {
-  var tmp
-  var len = uint8.length
-  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
-  var output = ''
-  var parts = []
-  var maxChunkLength = 16383 // must be multiple of 3
-
-  // go through the array every three bytes, we'll deal with trailing stuff later
-  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
-  }
-
-  // pad the end with zeros, but make sure to not forget the extra bytes
-  if (extraBytes === 1) {
-    tmp = uint8[len - 1]
-    output += lookup[tmp >> 2]
-    output += lookup[(tmp << 4) & 0x3F]
-    output += '=='
-  } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
-    output += lookup[tmp >> 10]
-    output += lookup[(tmp >> 4) & 0x3F]
-    output += lookup[(tmp << 2) & 0x3F]
-    output += '='
-  }
-
-  parts.push(output)
-
-  return parts.join('')
-}
-
-},{}],9:[function(require,module,exports){
+},{"./components/hotspot":2,"./components/hotspot-manager":1,"./components/location":3,"./components/map":4,"./components/sockets":5,"./components/store":6,"./components/user":7}],9:[function(require,module,exports){
 (function (global){
 /*!
  * The buffer module from node.js, for the browser.
@@ -623,17 +511,12 @@ Buffer.compare = function compare (a, b) {
   var x = a.length
   var y = b.length
 
-  var i = 0
-  var len = Math.min(x, y)
-  while (i < len) {
-    if (a[i] !== b[i]) break
-
-    ++i
-  }
-
-  if (i !== len) {
-    x = a[i]
-    y = b[i]
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
   }
 
   if (x < y) return -1
@@ -794,7 +677,6 @@ Buffer.prototype.inspect = function inspect () {
 
 Buffer.prototype.compare = function compare (b) {
   if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
-  if (this === b) return 0
   return Buffer.compare(this, b)
 }
 
@@ -1800,12 +1682,116 @@ function blitBuffer (src, dst, offset, length) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":8,"ieee754":11,"isarray":10}],10:[function(require,module,exports){
-var toString = {}.toString;
+},{"base64-js":10,"ieee754":11,"isarray":12}],10:[function(require,module,exports){
+'use strict'
 
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+function init () {
+  var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  for (var i = 0, len = code.length; i < len; ++i) {
+    lookup[i] = code[i]
+    revLookup[code.charCodeAt(i)] = i
+  }
+
+  revLookup['-'.charCodeAt(0)] = 62
+  revLookup['_'.charCodeAt(0)] = 63
+}
+
+init()
+
+function toByteArray (b64) {
+  var i, j, l, tmp, placeHolders, arr
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // the number of equal signs (place holders)
+  // if there are two placeholders, than the two characters before it
+  // represent one byte
+  // if there is only one, then the three characters before it represent 2 bytes
+  // this is just a cheap hack to not do indexOf twice
+  placeHolders = b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+
+  // base64 is 4/3 + up to two characters of the original data
+  arr = new Arr(len * 3 / 4 - placeHolders)
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  l = placeHolders > 0 ? len - 4 : len
+
+  var L = 0
+
+  for (i = 0, j = 0; i < l; i += 4, j += 3) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+    arr[L++] = (tmp >> 16) & 0xFF
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  if (placeHolders === 2) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[L++] = tmp & 0xFF
+  } else if (placeHolders === 1) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var output = ''
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    output += lookup[tmp >> 2]
+    output += lookup[(tmp << 4) & 0x3F]
+    output += '=='
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
+    output += lookup[tmp >> 10]
+    output += lookup[(tmp >> 4) & 0x3F]
+    output += lookup[(tmp << 2) & 0x3F]
+    output += '='
+  }
+
+  parts.push(output)
+
+  return parts.join('')
+}
 
 },{}],11:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -1894,6 +1880,13 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }
 
 },{}],12:[function(require,module,exports){
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+},{}],13:[function(require,module,exports){
 /*
  (c) 2015, Vladimir Agafonkin
  RBush, a JavaScript library for high-performance 2D spatial indexing of points and rectangles.
@@ -2516,7 +2509,7 @@ else window.rbush = rbush;
 
 })();
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * Turf is a modular GIS engine written in JavaScript. It performs geospatial
  * processing tasks with GeoJSON data and can be run on a server or in a browser.
@@ -2588,7 +2581,7 @@ module.exports = {
   hexGrid: require('turf-hex-grid')
 };
 
-},{"turf-aggregate":14,"turf-along":15,"turf-area":16,"turf-average":19,"turf-bbox-polygon":20,"turf-bearing":21,"turf-bezier":22,"turf-buffer":24,"turf-center":29,"turf-centroid":30,"turf-combine":32,"turf-concave":33,"turf-convex":34,"turf-count":64,"turf-destination":65,"turf-deviation":66,"turf-distance":68,"turf-envelope":70,"turf-erase":71,"turf-explode":76,"turf-extent":78,"turf-featurecollection":80,"turf-filter":81,"turf-flip":82,"turf-hex-grid":83,"turf-inside":84,"turf-intersect":85,"turf-isolines":91,"turf-jenks":93,"turf-kinks":95,"turf-line-distance":96,"turf-line-slice":97,"turf-linestring":98,"turf-max":99,"turf-median":100,"turf-merge":101,"turf-midpoint":103,"turf-min":104,"turf-nearest":105,"turf-planepoint":106,"turf-point":110,"turf-point-grid":107,"turf-point-on-line":108,"turf-point-on-surface":109,"turf-polygon":111,"turf-quantile":112,"turf-random":114,"turf-reclass":116,"turf-remove":117,"turf-sample":118,"turf-simplify":119,"turf-size":121,"turf-square":123,"turf-square-grid":122,"turf-sum":124,"turf-tag":125,"turf-tin":126,"turf-triangle-grid":127,"turf-union":128,"turf-variance":133,"turf-within":135}],14:[function(require,module,exports){
+},{"turf-aggregate":15,"turf-along":16,"turf-area":17,"turf-average":20,"turf-bbox-polygon":21,"turf-bearing":22,"turf-bezier":23,"turf-buffer":25,"turf-center":30,"turf-centroid":31,"turf-combine":33,"turf-concave":34,"turf-convex":35,"turf-count":65,"turf-destination":66,"turf-deviation":67,"turf-distance":69,"turf-envelope":71,"turf-erase":72,"turf-explode":77,"turf-extent":79,"turf-featurecollection":81,"turf-filter":82,"turf-flip":83,"turf-hex-grid":84,"turf-inside":85,"turf-intersect":86,"turf-isolines":92,"turf-jenks":94,"turf-kinks":96,"turf-line-distance":97,"turf-line-slice":98,"turf-linestring":99,"turf-max":100,"turf-median":101,"turf-merge":102,"turf-midpoint":104,"turf-min":105,"turf-nearest":106,"turf-planepoint":107,"turf-point":111,"turf-point-grid":108,"turf-point-on-line":109,"turf-point-on-surface":110,"turf-polygon":112,"turf-quantile":113,"turf-random":115,"turf-reclass":117,"turf-remove":118,"turf-sample":119,"turf-simplify":120,"turf-size":122,"turf-square":124,"turf-square-grid":123,"turf-sum":125,"turf-tag":126,"turf-tin":127,"turf-triangle-grid":128,"turf-union":129,"turf-variance":134,"turf-within":136}],15:[function(require,module,exports){
 var average = require('turf-average');
 var sum = require('turf-sum');
 var median = require('turf-median');
@@ -2787,7 +2780,7 @@ function isAggregationOperation(operation) {
     operation === 'count';
 }
 
-},{"turf-average":19,"turf-count":64,"turf-deviation":66,"turf-max":99,"turf-median":100,"turf-min":104,"turf-sum":124,"turf-variance":133}],15:[function(require,module,exports){
+},{"turf-average":20,"turf-count":65,"turf-deviation":67,"turf-max":100,"turf-median":101,"turf-min":105,"turf-sum":125,"turf-variance":134}],16:[function(require,module,exports){
 var distance = require('turf-distance');
 var point = require('turf-point');
 var bearing = require('turf-bearing');
@@ -2853,7 +2846,7 @@ module.exports = function (line, dist, units) {
   return point(coords[coords.length - 1]);
 }
 
-},{"turf-bearing":21,"turf-destination":65,"turf-distance":68,"turf-point":110}],16:[function(require,module,exports){
+},{"turf-bearing":22,"turf-destination":66,"turf-distance":69,"turf-point":111}],17:[function(require,module,exports){
 var geometryArea = require('geojson-area').geometry;
 
 /**
@@ -2917,7 +2910,7 @@ module.exports = function(_) {
     }
 };
 
-},{"geojson-area":17}],17:[function(require,module,exports){
+},{"geojson-area":18}],18:[function(require,module,exports){
 var wgs84 = require('wgs84');
 
 module.exports.geometry = geometry;
@@ -2993,12 +2986,12 @@ function rad(_) {
     return _ * Math.PI / 180;
 }
 
-},{"wgs84":18}],18:[function(require,module,exports){
+},{"wgs84":19}],19:[function(require,module,exports){
 module.exports.RADIUS = 6378137;
 module.exports.FLATTENING = 1/298.257223563;
 module.exports.POLAR_RADIUS = 6356752.3142;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -3129,7 +3122,7 @@ function average(values) {
   return sum / values.length;
 }
 
-},{"turf-inside":84}],20:[function(require,module,exports){
+},{"turf-inside":85}],21:[function(require,module,exports){
 var polygon = require('turf-polygon');
 
 /**
@@ -3163,7 +3156,7 @@ module.exports = function(bbox){
   return poly;
 }
 
-},{"turf-polygon":111}],21:[function(require,module,exports){
+},{"turf-polygon":112}],22:[function(require,module,exports){
 //http://en.wikipedia.org/wiki/Haversine_formula
 //http://www.movable-type.co.uk/scripts/latlong.html
 
@@ -3234,7 +3227,7 @@ function toDeg(radian) {
     return radian * 180 / Math.PI;
 }
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var linestring = require('turf-linestring');
 var Spline = require('./spline.js');
 
@@ -3303,7 +3296,7 @@ module.exports = function(line, resolution, sharpness){
   return lineOut;
 };
 
-},{"./spline.js":23,"turf-linestring":98}],23:[function(require,module,exports){
+},{"./spline.js":24,"turf-linestring":99}],24:[function(require,module,exports){
  /**
    * BezierSpline
    * http://leszekr.github.com/
@@ -3442,7 +3435,7 @@ var Spline = function(options){
 
   module.exports = Spline;
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 // http://stackoverflow.com/questions/839899/how-do-i-calculate-a-point-on-a-circles-circumference
 // radians = degrees * (pi/180)
 // https://github.com/bjornharrtell/jsts/blob/master/examples/buffer.html
@@ -3538,12 +3531,12 @@ var bufferOp = function(feature, radius){
   return buffered;
 }
 
-},{"jsts":25,"turf-combine":32,"turf-featurecollection":80,"turf-polygon":111}],25:[function(require,module,exports){
+},{"jsts":26,"turf-combine":33,"turf-featurecollection":81,"turf-polygon":112}],26:[function(require,module,exports){
 require('javascript.util');
 var jsts = require('./lib/jsts');
 module.exports = jsts
 
-},{"./lib/jsts":26,"javascript.util":28}],26:[function(require,module,exports){
+},{"./lib/jsts":27,"javascript.util":29}],27:[function(require,module,exports){
 /* The JSTS Topology Suite is a collection of JavaScript classes that
 implement the fundamental operations required to validate a given
 geo-spatial data set to a known topological specification.
@@ -5253,7 +5246,7 @@ return true;if(this.isBoundaryPoint(li,bdyNodes[1]))
 return true;return false;}else{for(var i=bdyNodes.iterator();i.hasNext();){var node=i.next();var pt=node.getCoordinate();if(li.isIntersection(pt))
 return true;}
 return false;}};})();
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (global){
 /*
   javascript.util is a port of selected parts of java.util to JavaScript which
@@ -5299,10 +5292,10 @@ L.prototype.iterator=L.prototype.f;function N(a){this.l=a}f("$jscomp.scope.Itera
 r,global.javascript.util.Set=x,global.javascript.util.SortedMap=A,global.javascript.util.SortedSet=B,global.javascript.util.Stack=C,global.javascript.util.TreeMap=H,global.javascript.util.TreeSet=L);}).call(this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 require('./dist/javascript.util-node.min.js');
 
-},{"./dist/javascript.util-node.min.js":27}],29:[function(require,module,exports){
+},{"./dist/javascript.util-node.min.js":28}],30:[function(require,module,exports){
 var extent = require('turf-extent'),
     point = require('turf-point');
 
@@ -5426,7 +5419,7 @@ module.exports = function(layer, done){
   return point([x, y]);
 };
 
-},{"turf-extent":78,"turf-point":110}],30:[function(require,module,exports){
+},{"turf-extent":79,"turf-point":111}],31:[function(require,module,exports){
 var each = require('turf-meta').coordEach;
 var point = require('turf-point');
 
@@ -5474,7 +5467,7 @@ module.exports = function(features){
   return point([xSum / len, ySum / len]);
 };
 
-},{"turf-meta":31,"turf-point":110}],31:[function(require,module,exports){
+},{"turf-meta":32,"turf-point":111}],32:[function(require,module,exports){
 /**
  * Lazily iterate over coordinates in any GeoJSON object, similar to
  * Array.forEach.
@@ -5614,7 +5607,7 @@ function propReduce(layer, callback, memo) {
 }
 module.exports.propReduce = propReduce;
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /**
  * Combines a {@link FeatureCollection} of {@link Point}, {@link LineString}, or {@link Polygon} features into {@link MultiPoint}, {@link MultiLineString}, or {@link MultiPolygon} features.
  *
@@ -5694,7 +5687,7 @@ function pluckCoods(multi){
   });
 }
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 // 1. run tin on points
 // 2. calculate lenth of all edges and area of all triangles
 // 3. remove triangles that fail the max length test
@@ -5804,7 +5797,7 @@ module.exports = function(points, maxEdge, units) {
   return t.merge(tinPolys);
 };
 
-},{"turf-distance":68,"turf-merge":101,"turf-point":110,"turf-tin":126}],34:[function(require,module,exports){
+},{"turf-distance":69,"turf-merge":102,"turf-point":111,"turf-tin":127}],35:[function(require,module,exports){
 var each = require('turf-meta').coordEach,
     convexHull = require('convex-hull'),
     polygon = require('turf-polygon');
@@ -5893,7 +5886,7 @@ module.exports = function(fc) {
   return polygon([ring]);
 };
 
-},{"convex-hull":35,"turf-meta":63,"turf-polygon":111}],35:[function(require,module,exports){
+},{"convex-hull":36,"turf-meta":64,"turf-polygon":112}],36:[function(require,module,exports){
 "use strict"
 
 var convexHull1d = require('./lib/ch1d')
@@ -5919,7 +5912,7 @@ function convexHull(points) {
   }
   return convexHullnd(points, d)
 }
-},{"./lib/ch1d":36,"./lib/ch2d":37,"./lib/chnd":38}],36:[function(require,module,exports){
+},{"./lib/ch1d":37,"./lib/ch2d":38,"./lib/chnd":39}],37:[function(require,module,exports){
 "use strict"
 
 module.exports = convexHull1d
@@ -5943,7 +5936,7 @@ function convexHull1d(points) {
     return [[lo]]
   }
 }
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHull2D
@@ -5966,7 +5959,7 @@ function convexHull2D(points) {
   return edges
 }
 
-},{"monotone-convex-hull-2d":56}],38:[function(require,module,exports){
+},{"monotone-convex-hull-2d":57}],39:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHullnD
@@ -6027,7 +6020,7 @@ function convexHullnD(points, d) {
     return invPermute(nhull, ah)
   }
 }
-},{"affine-hull":39,"incremental-convex-hull":46}],39:[function(require,module,exports){
+},{"affine-hull":40,"incremental-convex-hull":47}],40:[function(require,module,exports){
 'use strict'
 
 module.exports = affineHull
@@ -6079,7 +6072,7 @@ function affineHull(points) {
   }
   return index
 }
-},{"robust-orientation":45}],40:[function(require,module,exports){
+},{"robust-orientation":46}],41:[function(require,module,exports){
 "use strict"
 
 module.exports = fastTwoSum
@@ -6097,7 +6090,7 @@ function fastTwoSum(a, b, result) {
 	}
 	return [ar+br, x]
 }
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -6148,7 +6141,7 @@ function scaleLinearExpansion(e, scale) {
   g.length = count
   return g
 }
-},{"two-product":44,"two-sum":40}],42:[function(require,module,exports){
+},{"two-product":45,"two-sum":41}],43:[function(require,module,exports){
 "use strict"
 
 module.exports = robustSubtract
@@ -6305,7 +6298,7 @@ function robustSubtract(e, f) {
   g.length = count
   return g
 }
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict"
 
 module.exports = linearExpansionSum
@@ -6462,7 +6455,7 @@ function linearExpansionSum(e, f) {
   g.length = count
   return g
 }
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict"
 
 module.exports = twoProduct
@@ -6496,7 +6489,7 @@ function twoProduct(a, b, result) {
 
   return [ y, x ]
 }
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -6687,7 +6680,7 @@ function generateOrientationProc() {
 }
 
 generateOrientationProc()
-},{"robust-scale":41,"robust-subtract":42,"robust-sum":43,"two-product":44}],46:[function(require,module,exports){
+},{"robust-scale":42,"robust-subtract":43,"robust-sum":44,"two-product":45}],47:[function(require,module,exports){
 "use strict"
 
 //High level idea:
@@ -7134,19 +7127,19 @@ function incrementalConvexHull(points, randomSearch) {
   //Extract boundary cells
   return triangles.boundary()
 }
-},{"robust-orientation":52,"simplicial-complex":55}],47:[function(require,module,exports){
-arguments[4][40][0].apply(exports,arguments)
-},{"dup":40}],48:[function(require,module,exports){
+},{"robust-orientation":53,"simplicial-complex":56}],48:[function(require,module,exports){
 arguments[4][41][0].apply(exports,arguments)
-},{"dup":41,"two-product":51,"two-sum":47}],49:[function(require,module,exports){
+},{"dup":41}],49:[function(require,module,exports){
 arguments[4][42][0].apply(exports,arguments)
-},{"dup":42}],50:[function(require,module,exports){
+},{"dup":42,"two-product":52,"two-sum":48}],50:[function(require,module,exports){
 arguments[4][43][0].apply(exports,arguments)
 },{"dup":43}],51:[function(require,module,exports){
 arguments[4][44][0].apply(exports,arguments)
 },{"dup":44}],52:[function(require,module,exports){
 arguments[4][45][0].apply(exports,arguments)
-},{"dup":45,"robust-scale":48,"robust-subtract":49,"robust-sum":50,"two-product":51}],53:[function(require,module,exports){
+},{"dup":45}],53:[function(require,module,exports){
+arguments[4][46][0].apply(exports,arguments)
+},{"dup":46,"robust-scale":49,"robust-subtract":50,"robust-sum":51,"two-product":52}],54:[function(require,module,exports){
 /**
  * Bit twiddling hacks for JavaScript.
  *
@@ -7352,7 +7345,7 @@ exports.nextCombination = function(v) {
 }
 
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict"; "use restrict";
 
 module.exports = UnionFind;
@@ -7415,7 +7408,7 @@ proto.link = function(x, y) {
     ++ranks[xr];
   }
 }
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 "use strict"; "use restrict";
 
 var bits      = require("bit-twiddle")
@@ -7759,7 +7752,7 @@ function connectedComponents(cells, vertex_count) {
 }
 exports.connectedComponents = connectedComponents
 
-},{"bit-twiddle":53,"union-find":54}],56:[function(require,module,exports){
+},{"bit-twiddle":54,"union-find":55}],57:[function(require,module,exports){
 'use strict'
 
 module.exports = monotoneConvexHull2D
@@ -7841,21 +7834,21 @@ function monotoneConvexHull2D(points) {
   //Return result
   return result
 }
-},{"robust-orientation":62}],57:[function(require,module,exports){
-arguments[4][40][0].apply(exports,arguments)
-},{"dup":40}],58:[function(require,module,exports){
+},{"robust-orientation":63}],58:[function(require,module,exports){
 arguments[4][41][0].apply(exports,arguments)
-},{"dup":41,"two-product":61,"two-sum":57}],59:[function(require,module,exports){
+},{"dup":41}],59:[function(require,module,exports){
 arguments[4][42][0].apply(exports,arguments)
-},{"dup":42}],60:[function(require,module,exports){
+},{"dup":42,"two-product":62,"two-sum":58}],60:[function(require,module,exports){
 arguments[4][43][0].apply(exports,arguments)
 },{"dup":43}],61:[function(require,module,exports){
 arguments[4][44][0].apply(exports,arguments)
 },{"dup":44}],62:[function(require,module,exports){
 arguments[4][45][0].apply(exports,arguments)
-},{"dup":45,"robust-scale":58,"robust-subtract":59,"robust-sum":60,"two-product":61}],63:[function(require,module,exports){
-arguments[4][31][0].apply(exports,arguments)
-},{"dup":31}],64:[function(require,module,exports){
+},{"dup":45}],63:[function(require,module,exports){
+arguments[4][46][0].apply(exports,arguments)
+},{"dup":46,"robust-scale":59,"robust-subtract":60,"robust-sum":61,"two-product":62}],64:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"dup":32}],65:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -7953,7 +7946,7 @@ module.exports = function(polyFC, ptFC, outField, done){
   return polyFC;
 };
 
-},{"turf-inside":84}],65:[function(require,module,exports){
+},{"turf-inside":85}],66:[function(require,module,exports){
 //http://en.wikipedia.org/wiki/Haversine_formula
 //http://www.movable-type.co.uk/scripts/latlong.html
 var point = require('turf-point');
@@ -8031,7 +8024,7 @@ function toDeg(rad) {
     return rad * 180 / Math.PI;
 }
 
-},{"turf-point":110}],66:[function(require,module,exports){
+},{"turf-point":111}],67:[function(require,module,exports){
 var ss = require('simple-statistics');
 var inside = require('turf-inside');
 
@@ -8163,7 +8156,7 @@ module.exports = function(polyFC, ptFC, inField, outField, done){
   return polyFC;
 }
 
-},{"simple-statistics":67,"turf-inside":84}],67:[function(require,module,exports){
+},{"simple-statistics":68,"turf-inside":85}],68:[function(require,module,exports){
 /* global module */
 // # simple-statistics
 //
@@ -9734,7 +9727,7 @@ module.exports = function(polyFC, ptFC, inField, outField, done){
 
 })(this);
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 var invariant = require('turf-invariant');
 //http://en.wikipedia.org/wiki/Haversine_formula
 //http://www.movable-type.co.uk/scripts/latlong.html
@@ -9825,7 +9818,7 @@ function toRad(degree) {
   return degree * Math.PI / 180;
 }
 
-},{"turf-invariant":69}],69:[function(require,module,exports){
+},{"turf-invariant":70}],70:[function(require,module,exports){
 module.exports.geojsonType = geojsonType;
 module.exports.collectionOf = collectionOf;
 module.exports.featureOf = featureOf;
@@ -9893,7 +9886,7 @@ function collectionOf(value, type, name) {
     }
 }
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 var extent = require('turf-extent');
 var bboxPolygon = require('turf-bbox-polygon');
 
@@ -9956,7 +9949,7 @@ module.exports = function(features, done){
   return poly;
 }
 
-},{"turf-bbox-polygon":20,"turf-extent":78}],71:[function(require,module,exports){
+},{"turf-bbox-polygon":21,"turf-extent":79}],72:[function(require,module,exports){
 // depend on jsts for now https://github.com/bjornharrtell/jsts/blob/master/examples/overlay.html
 var jsts = require('jsts');
 
@@ -10054,15 +10047,15 @@ module.exports = function(p1, p2, done){
   }
 };
 
-},{"jsts":72}],72:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"./lib/jsts":73,"dup":25,"javascript.util":75}],73:[function(require,module,exports){
+},{"jsts":73}],73:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"dup":26}],74:[function(require,module,exports){
+},{"./lib/jsts":74,"dup":26,"javascript.util":76}],74:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
 },{"dup":27}],75:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"./dist/javascript.util-node.min.js":74,"dup":28}],76:[function(require,module,exports){
+},{"dup":28}],76:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"./dist/javascript.util-node.min.js":75,"dup":29}],77:[function(require,module,exports){
 var featureCollection = require('turf-featurecollection');
 var each = require('turf-meta').coordEach;
 var point = require('turf-point');
@@ -10108,9 +10101,9 @@ module.exports = function(layer) {
   return featureCollection(points);
 };
 
-},{"turf-featurecollection":80,"turf-meta":77,"turf-point":110}],77:[function(require,module,exports){
-arguments[4][31][0].apply(exports,arguments)
-},{"dup":31}],78:[function(require,module,exports){
+},{"turf-featurecollection":81,"turf-meta":78,"turf-point":111}],78:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"dup":32}],79:[function(require,module,exports){
 var each = require('turf-meta').coordEach;
 
 /**
@@ -10180,9 +10173,9 @@ module.exports = function(layer) {
     return extent;
 };
 
-},{"turf-meta":79}],79:[function(require,module,exports){
-arguments[4][31][0].apply(exports,arguments)
-},{"dup":31}],80:[function(require,module,exports){
+},{"turf-meta":80}],80:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"dup":32}],81:[function(require,module,exports){
 /**
  * Takes one or more {@link Feature|Features} and creates a {@link FeatureCollection}
  *
@@ -10208,7 +10201,7 @@ module.exports = function(features){
   };
 };
 
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 var featureCollection = require('turf-featurecollection');
 
 /**
@@ -10301,7 +10294,7 @@ module.exports = function(collection, key, val) {
   return newFC;
 };
 
-},{"turf-featurecollection":80}],82:[function(require,module,exports){
+},{"turf-featurecollection":81}],83:[function(require,module,exports){
 /**
  * Takes a {@link GeoJSON} object of any type and flips all of its coordinates
  * from `[x, y]` to `[y, x]`.
@@ -10389,7 +10382,7 @@ function flip3(coords) {
       for(var k = 0; k < coords[i][j].length; k++) coords[i][j][k].reverse();
 }
 
-},{}],83:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 var point = require('turf-point');
 var polygon = require('turf-polygon');
 var distance = require('turf-distance');
@@ -10497,7 +10490,7 @@ function hexagon(center, radius) {
   vertices.push(vertices[0]);
   return polygon([vertices]);
 }
-},{"turf-distance":68,"turf-featurecollection":80,"turf-point":110,"turf-polygon":111}],84:[function(require,module,exports){
+},{"turf-distance":69,"turf-featurecollection":81,"turf-point":111,"turf-polygon":112}],85:[function(require,module,exports){
 // http://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
 // modified from: https://github.com/substack/point-in-polygon/blob/master/index.js
 // which was modified from http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
@@ -10603,7 +10596,7 @@ function inRing (pt, ring) {
 }
 
 
-},{}],85:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 // depend on jsts for now https://github.com/bjornharrtell/jsts/blob/master/examples/overlay.html
 var jsts = require('jsts');
 var featurecollection = require('turf-featurecollection');
@@ -10668,15 +10661,15 @@ module.exports = function(poly1, poly2){
   }
 };
 
-},{"jsts":86,"turf-featurecollection":80}],86:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"./lib/jsts":87,"dup":25,"javascript.util":89}],87:[function(require,module,exports){
+},{"jsts":87,"turf-featurecollection":81}],87:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"dup":26}],88:[function(require,module,exports){
+},{"./lib/jsts":88,"dup":26,"javascript.util":90}],88:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
 },{"dup":27}],89:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"./dist/javascript.util-node.min.js":88,"dup":28}],90:[function(require,module,exports){
+},{"dup":28}],90:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"./dist/javascript.util-node.min.js":89,"dup":29}],91:[function(require,module,exports){
 /**
  * Copyright (c) 2010, Jason Davies.
  *
@@ -11192,7 +11185,7 @@ arguments[4][28][0].apply(exports,arguments)
     }
   }
 
-},{}],91:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 //https://github.com/jasondavies/conrec.js
 //http://stackoverflow.com/questions/263305/drawing-a-topographical-map
 var tin = require('turf-tin');
@@ -11293,7 +11286,7 @@ module.exports = function(points, z, resolution, breaks, done){
 
 
 
-},{"./conrec":90,"turf-extent":78,"turf-featurecollection":80,"turf-grid":92,"turf-inside":84,"turf-linestring":98,"turf-planepoint":106,"turf-square":123,"turf-tin":126}],92:[function(require,module,exports){
+},{"./conrec":91,"turf-extent":79,"turf-featurecollection":81,"turf-grid":93,"turf-inside":85,"turf-linestring":99,"turf-planepoint":107,"turf-square":124,"turf-tin":127}],93:[function(require,module,exports){
 var point = require('turf-point');
 
 /**
@@ -11332,7 +11325,7 @@ module.exports = function(extents, depth) {
   return fc;
 }
 
-},{"turf-point":110}],93:[function(require,module,exports){
+},{"turf-point":111}],94:[function(require,module,exports){
 var ss = require('simple-statistics');
 
 /**
@@ -11414,9 +11407,9 @@ module.exports = function(fc, field, num){
   return breaks;
 };
 
-},{"simple-statistics":94}],94:[function(require,module,exports){
-arguments[4][67][0].apply(exports,arguments)
-},{"dup":67}],95:[function(require,module,exports){
+},{"simple-statistics":95}],95:[function(require,module,exports){
+arguments[4][68][0].apply(exports,arguments)
+},{"dup":68}],96:[function(require,module,exports){
 /**
  * Takes a {@link Polygon} feature and returns a {@link FeatureCollection} of {@link Point} features at all self-intersections.
  *
@@ -11526,7 +11519,7 @@ function lineIntersects(line1StartX, line1StartY, line1EndX, line1EndY, line2Sta
   }
 }
 
-},{"turf-featurecollection":80,"turf-point":110,"turf-polygon":111}],96:[function(require,module,exports){
+},{"turf-featurecollection":81,"turf-point":111,"turf-polygon":112}],97:[function(require,module,exports){
 var distance = require('turf-distance');
 var point = require('turf-point');
 
@@ -11575,7 +11568,7 @@ module.exports = function (line, units) {
   return travelled;
 }
 
-},{"turf-distance":68,"turf-point":110}],97:[function(require,module,exports){
+},{"turf-distance":69,"turf-point":111}],98:[function(require,module,exports){
 var distance = require('turf-distance');
 var point = require('turf-point');
 var linestring = require('turf-linestring');
@@ -11758,7 +11751,7 @@ function lineIntersects(line1StartX, line1StartY, line1EndX, line1EndY, line2Sta
   }
 }
 
-},{"turf-bearing":21,"turf-destination":65,"turf-distance":68,"turf-linestring":98,"turf-point":110}],98:[function(require,module,exports){
+},{"turf-bearing":22,"turf-destination":66,"turf-distance":69,"turf-linestring":99,"turf-point":111}],99:[function(require,module,exports){
 /**
  * Creates a {@link LineString} {@link Feature} based on a
  * coordinate array. Properties can be added optionally.
@@ -11801,7 +11794,7 @@ module.exports = function(coordinates, properties){
   };
 };
 
-},{}],99:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -11939,7 +11932,7 @@ function max(x) {
     return value;
 }
 
-},{"turf-inside":84}],100:[function(require,module,exports){
+},{"turf-inside":85}],101:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -12087,7 +12080,7 @@ function median(x) {
     }
 }
 
-},{"turf-inside":84}],101:[function(require,module,exports){
+},{"turf-inside":85}],102:[function(require,module,exports){
 var clone = require('clone');
 var union = require('turf-union');
 
@@ -12156,7 +12149,7 @@ module.exports = function(polygons, done){
   return merged;
 };
 
-},{"clone":102,"turf-union":128}],102:[function(require,module,exports){
+},{"clone":103,"turf-union":129}],103:[function(require,module,exports){
 (function (Buffer){
 'use strict';
 
@@ -12304,7 +12297,7 @@ clone.clonePrototype = function(parent) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":9}],103:[function(require,module,exports){
+},{"buffer":9}],104:[function(require,module,exports){
 // http://cs.selu.edu/~rbyrd/math/midpoint/
 // ((x1+x2)/2), ((y1+y2)/2)
 var point = require('turf-point');
@@ -12364,7 +12357,7 @@ module.exports = function(point1, point2) {
   return point([midX, midY]);
 };
 
-},{"turf-point":110}],104:[function(require,module,exports){
+},{"turf-point":111}],105:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -12502,7 +12495,7 @@ function min(x) {
     return value;
 }
 
-},{"turf-inside":84}],105:[function(require,module,exports){
+},{"turf-inside":85}],106:[function(require,module,exports){
 var distance = require('turf-distance');
 
 /**
@@ -12585,7 +12578,7 @@ module.exports = function(targetPoint, points){
   return nearestPoint;
 }
 
-},{"turf-distance":68}],106:[function(require,module,exports){
+},{"turf-distance":69}],107:[function(require,module,exports){
 /**
  * Takes a triangular plane as a {@link Polygon} feature
  * and a {@link Point} feature within that triangle and returns the z-value
@@ -12660,7 +12653,7 @@ module.exports = function(point, triangle){
   return z;
 };
 
-},{}],107:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 var point = require('turf-point');
 var featurecollection = require('turf-featurecollection');
 var distance = require('turf-distance');
@@ -12700,7 +12693,7 @@ module.exports = function (bbox, cell, units) {
   
   return fc;
 }
-},{"turf-distance":68,"turf-featurecollection":80,"turf-point":110}],108:[function(require,module,exports){
+},{"turf-distance":69,"turf-featurecollection":81,"turf-point":111}],109:[function(require,module,exports){
 var distance = require('turf-distance');
 var point = require('turf-point');
 var linestring = require('turf-linestring');
@@ -12865,7 +12858,7 @@ function lineIntersects(line1StartX, line1StartY, line1EndX, line1EndY, line2Sta
   }
 }
 
-},{"turf-bearing":21,"turf-destination":65,"turf-distance":68,"turf-linestring":98,"turf-point":110}],109:[function(require,module,exports){
+},{"turf-bearing":22,"turf-destination":66,"turf-distance":69,"turf-linestring":99,"turf-point":111}],110:[function(require,module,exports){
 var featureCollection = require('turf-featurecollection');
 var centroid = require('turf-center');
 var distance = require('turf-distance');
@@ -13016,7 +13009,7 @@ function pointOnSegment (x, y, x1, y1, x2, y2) {
   }
 }
 
-},{"turf-center":29,"turf-distance":68,"turf-explode":76,"turf-featurecollection":80,"turf-inside":84}],110:[function(require,module,exports){
+},{"turf-center":30,"turf-distance":69,"turf-explode":77,"turf-featurecollection":81,"turf-inside":85}],111:[function(require,module,exports){
 /**
  * Takes coordinates and properties (optional) and returns a new {@link Point} feature.
  *
@@ -13048,7 +13041,7 @@ module.exports = function(coordinates, properties) {
   };
 };
 
-},{}],111:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 /**
  * Takes an array of LinearRings and optionally an {@link Object} with properties and returns a GeoJSON {@link Polygon} feature.
  *
@@ -13103,7 +13096,7 @@ module.exports = function(coordinates, properties){
   return polygon;
 };
 
-},{}],112:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 var ss = require('simple-statistics');
 
 /**
@@ -13185,9 +13178,9 @@ module.exports = function(fc, field, percentiles){
   return quantiles;
 };
 
-},{"simple-statistics":113}],113:[function(require,module,exports){
-arguments[4][67][0].apply(exports,arguments)
-},{"dup":67}],114:[function(require,module,exports){
+},{"simple-statistics":114}],114:[function(require,module,exports){
+arguments[4][68][0].apply(exports,arguments)
+},{"dup":68}],115:[function(require,module,exports){
 var random = require('geojson-random');
 
 /**
@@ -13241,7 +13234,7 @@ module.exports = function(type, count, options) {
     }
 };
 
-},{"geojson-random":115}],115:[function(require,module,exports){
+},{"geojson-random":116}],116:[function(require,module,exports){
 module.exports = function() {
     throw new Error('call .point() or .polygon() instead');
 };
@@ -13346,7 +13339,7 @@ function collection(f) {
     };
 }
 
-},{}],116:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 var featurecollection = require('turf-featurecollection');
 var reclass = require('./index.js');
 
@@ -13443,7 +13436,7 @@ module.exports = function(fc, inField, outField, translations, done){
   return reclassed;
 };
 
-},{"./index.js":116,"turf-featurecollection":80}],117:[function(require,module,exports){
+},{"./index.js":117,"turf-featurecollection":81}],118:[function(require,module,exports){
 var featureCollection = require('turf-featurecollection');
 
 /**
@@ -13544,7 +13537,7 @@ module.exports = function(collection, key, val) {
   return newFC;
 };
 
-},{"turf-featurecollection":80}],118:[function(require,module,exports){
+},{"turf-featurecollection":81}],119:[function(require,module,exports){
 // http://stackoverflow.com/questions/11935175/sampling-a-random-subset-from-an-array
 var featureCollection = require('turf-featurecollection');
 
@@ -13581,7 +13574,7 @@ function getRandomSubarray(arr, size) {
   return shuffled.slice(min);
 }
 
-},{"turf-featurecollection":80}],119:[function(require,module,exports){
+},{"turf-featurecollection":81}],120:[function(require,module,exports){
 var simplify = require('simplify-js');
 
 /**
@@ -13674,7 +13667,7 @@ function simpleFeature (geom, properties) {
   };
 }
 
-},{"simplify-js":120}],120:[function(require,module,exports){
+},{"simplify-js":121}],121:[function(require,module,exports){
 /*
  (c) 2013, Vladimir Agafonkin
  Simplify.js, a high-performance JS polyline simplification library
@@ -13807,7 +13800,7 @@ else window.simplify = simplify;
 
 })();
 
-},{}],121:[function(require,module,exports){
+},{}],122:[function(require,module,exports){
 /**
  * Takes a bounding box and returns a new bounding box with a size expanded or contracted
  * by a factor of X.
@@ -13849,7 +13842,7 @@ module.exports = function(bbox, factor){
   return sized;
 }
 
-},{}],122:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 var featurecollection = require('turf-featurecollection');
 var point = require('turf-point');
 var polygon = require('turf-polygon');
@@ -13901,7 +13894,7 @@ module.exports = function (bbox, cell, units) {
   return fc;
 }
 
-},{"turf-distance":68,"turf-featurecollection":80,"turf-point":110,"turf-polygon":111}],123:[function(require,module,exports){
+},{"turf-distance":69,"turf-featurecollection":81,"turf-point":111,"turf-polygon":112}],124:[function(require,module,exports){
 var midpoint = require('turf-midpoint');
 var point = require('turf-point');
 var distance = require('turf-distance');
@@ -13956,7 +13949,7 @@ module.exports = function(bbox){
 }
 
 
-},{"turf-distance":68,"turf-midpoint":103,"turf-point":110}],124:[function(require,module,exports){
+},{"turf-distance":69,"turf-midpoint":104,"turf-point":111}],125:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -14092,7 +14085,7 @@ function sum(x) {
     return value;
 }
 
-},{"turf-inside":84}],125:[function(require,module,exports){
+},{"turf-inside":85}],126:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -14150,7 +14143,7 @@ module.exports = function(points, polygons, field, outField){
   return points;
 };
 
-},{"turf-inside":84}],126:[function(require,module,exports){
+},{"turf-inside":85}],127:[function(require,module,exports){
 //http://en.wikipedia.org/wiki/Delaunay_triangulation
 //https://github.com/ironwallaby/delaunay
 var polygon = require('turf-polygon');
@@ -14393,7 +14386,7 @@ function triangulate(vertices) {
   return closed;
 }
 
-},{"turf-featurecollection":80,"turf-polygon":111}],127:[function(require,module,exports){
+},{"turf-featurecollection":81,"turf-polygon":112}],128:[function(require,module,exports){
 var featurecollection = require('turf-featurecollection');
 var point = require('turf-point');
 var polygon = require('turf-polygon');
@@ -14501,7 +14494,7 @@ module.exports = function (bbox, cell, units) {
 };
 
 
-},{"turf-distance":68,"turf-featurecollection":80,"turf-point":110,"turf-polygon":111}],128:[function(require,module,exports){
+},{"turf-distance":69,"turf-featurecollection":81,"turf-point":111,"turf-polygon":112}],129:[function(require,module,exports){
 // look here for help http://svn.osgeo.org/grass/grass/branches/releasebranch_6_4/vector/v.overlay/main.c
 //must be array of polygons
 
@@ -14576,15 +14569,15 @@ module.exports = function(poly1, poly2){
   };
 }
 
-},{"jsts":129}],129:[function(require,module,exports){
-arguments[4][25][0].apply(exports,arguments)
-},{"./lib/jsts":130,"dup":25,"javascript.util":132}],130:[function(require,module,exports){
+},{"jsts":130}],130:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"dup":26}],131:[function(require,module,exports){
+},{"./lib/jsts":131,"dup":26,"javascript.util":133}],131:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
 },{"dup":27}],132:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"./dist/javascript.util-node.min.js":131,"dup":28}],133:[function(require,module,exports){
+},{"dup":28}],133:[function(require,module,exports){
+arguments[4][29][0].apply(exports,arguments)
+},{"./dist/javascript.util-node.min.js":132,"dup":29}],134:[function(require,module,exports){
 var ss = require('simple-statistics');
 var inside = require('turf-inside');
 
@@ -14713,9 +14706,9 @@ module.exports = function (polyFC, ptFC, inField, outField) {
   return polyFC;
 };
 
-},{"simple-statistics":134,"turf-inside":84}],134:[function(require,module,exports){
-arguments[4][67][0].apply(exports,arguments)
-},{"dup":67}],135:[function(require,module,exports){
+},{"simple-statistics":135,"turf-inside":85}],135:[function(require,module,exports){
+arguments[4][68][0].apply(exports,arguments)
+},{"dup":68}],136:[function(require,module,exports){
 var inside = require('turf-inside');
 var featureCollection = require('turf-featurecollection');
 
@@ -14813,4 +14806,4 @@ module.exports = function(ptFC, polyFC){
   return pointsWithin;
 };
 
-},{"turf-featurecollection":80,"turf-inside":84}]},{},[4]);
+},{"turf-featurecollection":81,"turf-inside":85}]},{},[8]);
